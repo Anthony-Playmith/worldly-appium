@@ -1,0 +1,4 @@
+{
+  "reporterEnabled": "spec, mocha-junit-reporter",
+  "mochaJunitReporterReporterOptions": { "mochaFile": "reports/junit/db-results.xml", "testsuitesTitle": "Worldly db tests" }
+}

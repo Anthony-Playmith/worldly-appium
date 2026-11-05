@@ -1,0 +1,50 @@
+{
+  "name": "worldly-appium",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Appium + WebdriverIO (TypeScript) end-to-end suite for the Worldly Android app, plus API and database tests against Supabase",
+  "type": "module",
+  "scripts": {
+    "test:ui": "wdio run wdio.conf.ts",
+    "test:ui:smoke": "wdio run wdio.conf.ts --suite smoke",
+    "test:ui:spec": "wdio run wdio.conf.ts --spec",
+    "test:api": "mocha --config .mocharc.api.json",
+    "test:db": "mocha --config .mocharc.db.json",
+    "test:backend": "mocha --config .mocharc.backend.json",
+    "test:all": "tsx scripts/run-all.ts",
+    "typecheck": "tsc --noEmit",
+    "appium:install-driver": "tsx scripts/appium.ts driver install uiautomator2",
+    "appium:doctor": "tsx scripts/appium.ts driver doctor uiautomator2",
+    "app:download": "tsx scripts/get-app.ts",
+    "sync:app-data": "tsx scripts/sync-app-data.ts",
+    "testcases:excel": "tsx scripts/build-testcases-xlsx.ts",
+    "cleanup:test-users": "tsx scripts/cleanup-test-users.ts",
+    "appium": "tsx scripts/appium.ts",
+    "report:summary": "tsx scripts/junit-summary.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.119.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^26.6.6",
+    "@wdio/appium-service": "^10.1.1",
+    "@wdio/cli": "^10.1.0",
+    "@wdio/junit-reporter": "^10.1.0",
+    "@wdio/local-runner": "^10.1.0",
+    "@wdio/mocha-framework": "^10.1.0",
+    "@wdio/spec-reporter": "^10.1.0",
+    "@wdio/types": "^10.1.0",
+    "appium": "^3.9.0",
+    "dotenv": "^18.0.9",
+    "exceljs": "^4.4.0",
+    "expect": "^30.5.2",
+    "mocha": "^11.8.0",
+    "mocha-junit-reporter": "^2.2.1",
+    "mocha-multi-reporters": "^1.5.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "webdriverio": "^10.1.0"
+  }
+}

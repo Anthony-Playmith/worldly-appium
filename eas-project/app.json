@@ -1,0 +1,8 @@
+{
+  "expo": {
+    "name": "Worldly",
+    "slug": "worldly",
+    "owner": "aplaymith",
+    "extra": { "eas": { "projectId": "0cd209db-5eb3-47a4-b47e-1ae56cbaf5bd" } }
+  }
+}

@@ -1,0 +1,92 @@
+name: Android UI tests (emulator)
+
+on:
+  schedule:
+    - cron: '30 11 * * *' # 05:30 Costa Rica (UTC-6)
+    - cron: '30 23 * * *' # 17:30 Costa Rica
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: 'WDIO suite (smoke, places, travel, quiz, account) — empty runs everything'
+        required: false
+        default: ''
+      profile:
+        description: 'EAS build profile to test (preview = APK of the latest preview build)'
+        required: false
+        default: 'preview'
+
+concurrency:
+  group: android-e2e
+  cancel-in-progress: false
+
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      APPIUM_HOME: ${{ github.workspace }}/.appium
+      APP_PATH: apps/worldly.apk
+      APP_LANGUAGE: en
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Check repository secrets
+        run: |
+          for v in SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SECRET_KEY EXPO_TOKEN; do
+            [ -n "${!v}" ] || { echo "::error::Repository secret $v is not set (Settings > Secrets and variables > Actions)"; exit 1; }
+          done
+
+      - run: npm ci
+      - name: Install the Appium UiAutomator2 driver
+        run: npm run appium:install-driver
+
+      - name: Download the latest Worldly build from EAS
+        run: npm run app:download -- --profile "${{ inputs.profile || 'preview' }}"
+
+      - name: Enable KVM (hardware acceleration for the emulator)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run UI tests on an Android 13 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          disk-size: 8G
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: npm run test:ui -- ${{ inputs.suite && format('--suite {0}', inputs.suite) || '' }}
+
+      - name: Results summary
+        if: always()
+        run: npm run report:summary
+
+      - name: Remove leftover test users
+        if: always()
+        run: npm run cleanup:test-users -- 30
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-reports
+          path: |
+            reports/
+            apps/build-info.json
+          retention-days: 30

@@ -1,0 +1,54 @@
+name: API & database tests
+
+on:
+  schedule:
+    - cron: '0 11 * * *' # 05:00 Costa Rica (UTC-6)
+    - cron: '0 23 * * *' # 17:00 Costa Rica
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['tests/api/**', 'tests/db/**', 'src/support/**', 'config/**', 'package*.json', '.github/workflows/backend-tests.yml']
+
+concurrency:
+  group: backend-tests
+  cancel-in-progress: false
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Check repository secrets
+        run: |
+          for v in SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SECRET_KEY; do
+            [ -n "${!v}" ] || { echo "::error::Repository secret $v is not set (Settings > Secrets and variables > Actions)"; exit 1; }
+          done
+
+      - name: API and database tests
+        run: npm run test:backend
+
+      - name: Results summary
+        if: always()
+        run: npm run report:summary
+
+      - name: Remove leftover test users
+        if: always()
+        run: npm run cleanup:test-users -- 30
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-reports
+          path: reports/
+          retention-days: 30

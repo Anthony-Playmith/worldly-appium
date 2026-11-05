@@ -1,0 +1,5 @@
+{
+  "name": "worldly-eas-lookup",
+  "private": true,
+  "description": "Minimal project descriptor so eas-cli can list the Worldly app's builds from this repo (see scripts/get-app.ts)."
+}

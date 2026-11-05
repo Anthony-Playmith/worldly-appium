@@ -1,0 +1,4 @@
+{
+  "reporterEnabled": "spec, mocha-junit-reporter",
+  "mochaJunitReporterReporterOptions": { "mochaFile": "reports/junit/api-results.xml", "testsuitesTitle": "Worldly api tests" }
+}

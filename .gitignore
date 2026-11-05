@@ -1,0 +1,12 @@
+node_modules/
+.appium/
+.tools/
+apps/*
+!apps/.gitkeep
+reports/
+scratch/
+.env
+.env.*
+!.env.example
+*.log
+~$*.xlsx

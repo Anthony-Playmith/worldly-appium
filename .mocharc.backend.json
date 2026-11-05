@@ -1,0 +1,8 @@
+{
+  "spec": ["tests/api/**/*.test.ts", "tests/db/**/*.test.ts"],
+  "node-option": ["import=tsx"],
+  "timeout": 120000,
+  "slow": 5000,
+  "reporter": "mocha-multi-reporters",
+  "reporter-option": ["configFile=config/mocha-reporters.backend.json"]
+}
