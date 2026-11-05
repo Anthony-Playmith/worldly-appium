@@ -2,7 +2,7 @@ import { $, $$, driver } from '@wdio/globals';
 
 import { byClass, byLabel, byLabelEnding, byLabelItem, byText, byTextContains, editText, inputAfterLabel } from '../support/selectors.js';
 import { language, t } from '../support/strings.js';
-import { anyAlert, hideKeyboard, isShown, scrollIntoView, scrollTapUntil, tap, tapUntil, typeInto, waitFor, waitGone } from './base.js';
+import { anyAlert, hideKeyboard, isShown, scrollIntoView, scrollTapUntil, tap, tapUntil, typeInto, waitFor, waitGone, scrollAndTap } from './base.js';
 
 export const FREE_COST_GROUP_LIMIT = 3;
 export const FREE_EXPENSE_LIMIT = 7;
@@ -30,7 +30,7 @@ export const CostsListPage = {
 export const CurrencyPicker = {
   /** The picker opens over the form (whose fields stay visible to Appium), so it is driven by its own search box. */
   async choose(fieldLabel: string, code: string) {
-    await (await scrollIntoView(`.description(${JSON.stringify(fieldLabel)})`)).click();
+    await scrollAndTap(`.description(${JSON.stringify(fieldLabel)})`);
     await typeInto(editText(t('costs.searchCurrency')), code);
     // Rows are labelled "<code>" or "<code>, <name>"; the picker's Close button shows it is still open
     const row = `android=new UiSelector().descriptionMatches(${JSON.stringify(`^${code}(,.*)?$`)})`;
@@ -137,7 +137,7 @@ export const ExpensePage = {
   },
   /** Chooses a split mode and types each included person's value, in member order. */
   async splitBy(mode: SplitMode, values: number[] = []) {
-    await (await scrollIntoView(`.description(${JSON.stringify(t(`costs.splitModes.${mode}`))})`)).click();
+    await scrollAndTap(`.description(${JSON.stringify(t(`costs.splitModes.${mode}`))})`);
     if (mode === 'equal') return;
     for (let i = 0; i < values.length; i++) {
       const inputs = await $$(this.shareInputs());

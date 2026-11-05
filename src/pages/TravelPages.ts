@@ -2,7 +2,7 @@ import { driver } from '@wdio/globals';
 
 import { alertIds, editText, byClass, byId, byLabel, byLabelEnding, byLabelStartsWith, byText, byTextStartsWith, inputAfterLabel } from '../support/selectors.js';
 import { t } from '../support/strings.js';
-import { anyAlert, hideKeyboard, isShown, scrollIntoView, scrollTapUntil, tap, tapUntil, typeInto, waitFor } from './base.js';
+import { anyAlert, hideKeyboard, isShown, scrollIntoView, scrollTapUntil, tap, tapUntil, typeInto, waitFor, scrollAndTap } from './base.js';
 
 export const FREE_TRIP_LIMIT = 5;
 
@@ -47,7 +47,7 @@ export const AirportPicker = {
 
   /** Opens the picker from its field, searches the IATA code and picks the airport. */
   async choose(fieldLabel: string, iata: string) {
-    await (await scrollIntoView(`.description(${JSON.stringify(fieldLabel)})`)).click();
+    await scrollAndTap(`.description(${JSON.stringify(fieldLabel)})`);
     await typeInto(this.search(), iata);
     await waitFor(this.result(iata));
     // The first tap after typing can be used to blur the search box, so tap until the picker closes

@@ -1,7 +1,7 @@
 import { byLabel, byText, byTextMatches } from '../support/selectors.js';
 import { getEntities, t } from '../support/strings.js';
 import { percentOf } from './MapPage.js';
-import { scrollIntoView, tap, waitFor } from './base.js';
+import { scrollIntoView, tap, waitFor, scrollAndTap } from './base.js';
 
 /** Countries counted on a continent, as the app counts them ("195" leaves out Taiwan and Kosovo). */
 export function continentTotal(continent: string, mode: '195' | '197' = '195') {
@@ -22,7 +22,7 @@ export const StatsPage = {
     await scrollIntoView(`.textMatches(${q(`(?i)^${t('stats.world')}$`)})`);
   },
   async setBasis(mode: '195' | '197') {
-    await (await scrollIntoView(`.description(${q(t(`stats.basis${mode}`))})`)).click();
+    await scrollAndTap(`.description(${q(t(`stats.basis${mode}`))})`);
   },
   /** Scrolls to a continent's "count/total · percent%" line. */
   async expectContinent(continent: string, count: number, mode: '195' | '197' = '195') {
@@ -31,9 +31,9 @@ export const StatsPage = {
   },
   /** Regions / Cities / Airports tiles are locked (PRO) for free users; tapping one opens the paywall. */
   async openLockedTile(kind: 'regions' | 'cities' | 'airports') {
-    await (await scrollIntoView(`.text(${q(t(`kinds.${kind}`))})`)).click();
+    await scrollAndTap(`.text(${q(t(`kinds.${kind}`))})`);
   },
   async openShare() {
-    await (await scrollIntoView(`.descriptionContains(${q(t('stats.share'))})`)).click();
+    await scrollAndTap(`.descriptionContains(${q(t('stats.share'))})`);
   },
 };

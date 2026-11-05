@@ -87,5 +87,7 @@ if (url.endsWith('.aab')) {
 } else {
   await download(url, out);
 }
-writeFileSync(path.join(path.dirname(out), 'build-info.json'), JSON.stringify({ ...build, downloadedAt: new Date().toISOString() }, null, 2));
+// No download or log URLs: CI publishes this file in the (public) run artifacts
+const { id, buildProfile, createdAt, gitCommitHash, appVersion } = build;
+writeFileSync(path.join(path.dirname(out), 'build-info.json'), JSON.stringify({ id, buildProfile, createdAt, gitCommitHash, appVersion, downloadedAt: new Date().toISOString() }, null, 2));
 console.log(`Saved ${path.relative(env.root, out)}`);

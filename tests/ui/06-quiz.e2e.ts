@@ -53,16 +53,16 @@ describe('Geography quiz', () => {
   });
 
   it('[UI-QZ-003] a wrong answer shows "Not quite" and highlights the right option', async () => {
-    await tap(QuizPlayPage.next());
+    await QuizPlayPage.next();
     const q = await currentQuestion();
     await QuizPlayPage.answer(q.wrong);
     await waitFor(QuizPlayPage.incorrect(), 10_000);
-    expect(await QuizPlayPage.correctOptionText()).toBe(q.correct);
+    expect(await QuizPlayPage.correctOptionText(q.wrong)).toBe(q.correct);
     await waitFor(QuizPlayPage.score(1, 2));
   });
 
   it(`[UI-QZ-004] a question left unanswered for ${QUESTION_SECONDS} s counts as "Time's up!"`, async () => {
-    await tap(QuizPlayPage.next());
+    await QuizPlayPage.next();
     const q = await currentQuestion();
     reportedQuestionId = q.id;
     await driver.pause((QUESTION_SECONDS + 1) * 1000);
@@ -71,13 +71,13 @@ describe('Geography quiz', () => {
   });
 
   it('[UI-QZ-005] "Report this question" sends a report that reaches Supabase', async () => {
-    await tap(QuizPlayPage.report());
+    await QuizPlayPage.openReport();
     await waitFor(QuizPlayPage.reportTitle());
     await tap(QuizPlayPage.reportReason('typo'));
     const note = `${QA_MARKER} UI test ${Date.now()}`;
     await typeInto(QuizPlayPage.reportNote(), note);
     await driver.hideKeyboard().catch(() => undefined);
-    await tap(QuizPlayPage.reportSend());
+    await QuizPlayPage.sendReport();
     const alert = await Alert.waitFor();
     expect([alert.title, alert.message]).toContain(t('quiz.reportThanks'));
     await Alert.dismiss();
@@ -102,7 +102,7 @@ describe('Geography quiz', () => {
       const q = await currentQuestion();
       await QuizPlayPage.answer(q.correct);
       await waitFor(QuizPlayPage.correct(), 10_000);
-      await tap(QuizPlayPage.next());
+      await QuizPlayPage.next();
     }
     await waitFor(QuizPlayPage.dailyDone());
     await tap(QuizPlayPage.keepPlaying());

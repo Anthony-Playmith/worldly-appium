@@ -124,6 +124,7 @@ powershell -ExecutionPolicy Bypass -File scripts\windows\register-task.ps1 -Time
 - **Test Cases** — ID, area, layer, priority, preconditions, numbered steps, expected result,
   the spec that automates it, the last automated result, and yellow columns for manual runs.
 - **Manual Run Log** — one row per manual execution.
+- **Findings** — defects and observations the suite found (from `testcases/findings.ts`).
 - **How to run** — the short version of this README.
 
 Refresh it after a run (manual columns you typed are kept):

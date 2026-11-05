@@ -2,7 +2,7 @@ import { $ } from '@wdio/globals';
 
 import { byClass, byLabel, byLabelEnding, byLabelItem, byLabelNth, byLabelStartsWith, byText, byTextStartsWith, inputAfterLabel } from '../support/selectors.js';
 import { t } from '../support/strings.js';
-import { hideKeyboard, isShown, scrollIntoView, tap, typeInto, waitFor } from './base.js';
+import { hideKeyboard, isShown, scrollIntoView, tap, typeInto, waitFor, scrollAndTap } from './base.js';
 
 const q = (s: string) => JSON.stringify(s);
 
@@ -43,21 +43,21 @@ export const ProfilePage = {
     return (await scrollIntoView(`.description(${q(t('settings.name'))})`)).getText();
   },
   async openLanguage() {
-    await (await scrollIntoView(`.text(${q(t('settings.language'))})`)).click();
+    await scrollAndTap(`.text(${q(t('settings.language'))})`);
   },
   async setTheme(key: 'system' | 'light' | 'dark') {
     const label = t(`settings.theme${key[0].toUpperCase()}${key.slice(1)}`);
-    await (await scrollIntoView(`.description(${q(label)})`)).click();
+    await scrollAndTap(`.description(${q(label)})`);
   },
   async themeSelected(key: 'system' | 'light' | 'dark') {
     const label = t(`settings.theme${key[0].toUpperCase()}${key.slice(1)}`);
     return (await (await scrollIntoView(`.description(${q(label)})`)).getAttribute('selected')) === 'true';
   },
   async tapMapTheme(id: 'classic' | 'ocean' | 'emerald') {
-    await (await scrollIntoView(`.description(${q(t(`settings.mapThemes.${id}`))})`)).click();
+    await scrollAndTap(`.description(${q(t(`settings.mapThemes.${id}`))})`);
   },
   async setCountBasis(mode: '195' | '197') {
-    await (await scrollIntoView(`.description(${q(t(`stats.basis${mode}`))})`)).click();
+    await scrollAndTap(`.description(${q(t(`stats.basis${mode}`))})`);
   },
   async deleteAccountButton() {
     return scrollIntoView(`.descriptionContains(${q(t('settings.deleteAccount'))})`);
@@ -69,7 +69,7 @@ export const ProfilePage = {
     await tap(this.timeline());
   },
   async openSignIn() {
-    await (await scrollIntoView(`.descriptionContains(${q(t('settings.signIn'))})`)).click();
+    await scrollAndTap(`.descriptionContains(${q(t('settings.signIn'))})`);
   },
   async version() {
     return (await scrollIntoView(`.textStartsWith(${q(t('settings.version', { version: '' }).trim())})`)).getText();
@@ -79,7 +79,7 @@ export const ProfilePage = {
 export const LanguagePage = {
   option: (label: string) => byText(label),
   async choose(label: string) {
-    await (await scrollIntoView(`.text(${q(label)})`)).click();
+    await scrollAndTap(`.text(${q(label)})`);
   },
 };
 

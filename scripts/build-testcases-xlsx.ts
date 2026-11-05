@@ -12,6 +12,7 @@ import ExcelJS from 'exceljs';
 
 import { env } from '../config/env.js';
 import { catalog, type TestCase } from '../testcases/catalog.js';
+import { type Finding, findings } from '../testcases/findings.js';
 import type { CaseResult } from './junit-summary.js';
 
 const OUT = path.join(env.root, 'docs', 'Worldly-Test-Cases.xlsx');
@@ -74,7 +75,10 @@ const previousLog = await (async () => {
   const ws = old.getWorksheet('Manual Run Log');
   const rows: ExcelJS.CellValue[][] = [];
   ws?.eachRow((row, n) => {
-    if (n > 5) rows.push((row.values as ExcelJS.CellValue[]).slice(1, 9));
+    if (n <= 5) return;
+    const values = (row.values as ExcelJS.CellValue[]).slice(1, 9);
+    // Keep only rows someone filled in (column 6 is the generated title formula)
+    if (values.some((v, i) => i !== 5 && v !== null && v !== undefined && v !== '')) rows.push(values);
   });
   return rows;
 })();
@@ -184,6 +188,8 @@ const cnt = (pred: (c: TestCase) => boolean) => catalog.filter(pred).length;
 const autoStatus = (c: TestCase) => (c.automation === 'Manual' ? 'n/a' : (resultLabel(results.get(c.id)) ?? 'Not run'));
 const manualStatus = (c: TestCase) => String(kept.get(c.id)?.['Manual result'] ?? 'Not run');
 
+// Cached results are tracked here: ExcelJS drops a cached value of 0, so cells can't be read back
+const totals = Array<number>(9).fill(0);
 areas.forEach((area, i) => {
   const r = headRow + 1 + i;
   const inArea = (c: TestCase) => c.area === area;
@@ -201,7 +207,10 @@ areas.forEach((area, i) => {
   ];
   const row = summary.getRow(r);
   row.getCell(1).value = area;
-  cells.forEach(([formula, result], j) => (row.getCell(j + 2).value = { formula, result }));
+  cells.forEach(([formula, result], j) => {
+    row.getCell(j + 2).value = { formula, result };
+    totals[j] += result;
+  });
   const passed = cells[3][1] + cells[6][1];
   const executed = cells[3][1] + cells[4][1] + cells[6][1] + cells[7][1] + cells[8][1];
   row.getCell(11).value = { formula: `IF((E${r}+F${r}+H${r}+I${r}+J${r})=0,"-",(E${r}+H${r})/(E${r}+F${r}+H${r}+I${r}+J${r}))`, result: executed ? passed / executed : '-' };
@@ -212,13 +221,11 @@ const totalRow = summary.getRow(lastArea + 1);
 totalRow.getCell(1).value = 'Total';
 for (let c = 2; c <= 10; c++) {
   const L = summary.getColumn(c).letter;
-  let result = 0;
-  for (let r = firstArea; r <= lastArea; r++) result += Number((summary.getCell(r, c).value as { result: number }).result);
-  totalRow.getCell(c).value = { formula: `SUM(${L}${firstArea}:${L}${lastArea})`, result };
+  totalRow.getCell(c).value = { formula: `SUM(${L}${firstArea}:${L}${lastArea})`, result: totals[c - 2] };
 }
 {
   const r = lastArea + 1;
-  const g = (c: number) => Number((summary.getCell(r, c).value as { result: number }).result);
+  const g = (c: number) => totals[c - 2];
   const executed = g(5) + g(6) + g(8) + g(9) + g(10);
   totalRow.getCell(11).value = { formula: `IF((E${r}+F${r}+H${r}+I${r}+J${r})=0,"-",(E${r}+H${r})/(E${r}+F${r}+H${r}+I${r}+J${r}))`, result: executed ? (g(5) + g(8)) / executed : '-' };
 }
@@ -285,6 +292,29 @@ log.addConditionalFormatting({ ref: `G6:G${6 + Math.max(logRows.length + 30, 60)
   { type: 'containsText', operator: 'containsText', text: 'Pass', priority: 1, style: { fill: fill(COLORS.pass) } },
   { type: 'containsText', operator: 'containsText', text: 'Fail', priority: 2, style: { fill: fill(COLORS.fail) } },
   { type: 'containsText', operator: 'containsText', text: 'Blocked', priority: 3, style: { fill: fill(COLORS.warn) } },
+] });
+
+// ─── Sheet: Findings
+const fsheet = wb.addWorksheet('Findings', { views: [{ state: 'frozen', ySplit: 1 }] });
+const fcols: [string, number, keyof Finding][] = [
+  ['ID', 8, 'id'], ['Found', 11, 'date'], ['Severity', 10, 'severity'], ['Title', 44, 'title'], ['Details', 60, 'details'],
+  ['Related tests', 22, 'tests'], ['Suggestion', 50, 'suggestion'], ['Status', 11, 'status'],
+];
+fsheet.columns = fcols.map(([header, width]) => ({ header, width }));
+styleHeader(fsheet.getRow(1));
+for (const f of findings) {
+  const row = fsheet.addRow(fcols.map(([, , key]) => f[key]));
+  row.eachCell({ includeEmpty: true }, (cell, col) => {
+    cell.font = font({ bold: col === 1 });
+    cell.alignment = { vertical: 'top', wrapText: true };
+    cell.border = thin;
+    if (col === 8) cell.fill = fill(COLORS.input);
+  });
+  row.getCell(8).dataValidation = { type: 'list', allowBlank: false, formulae: ['"Open,To confirm,Fixed,Won\'t fix"'] };
+}
+fsheet.addConditionalFormatting({ ref: `C2:C${findings.length + 1}`, rules: [
+  { type: 'containsText', operator: 'containsText', text: 'High', priority: 1, style: { fill: fill(COLORS.fail), font: font({ bold: true }) } },
+  { type: 'containsText', operator: 'containsText', text: 'Medium', priority: 2, style: { fill: fill(COLORS.warn) } },
 ] });
 
 // ─── Sheet: How to run

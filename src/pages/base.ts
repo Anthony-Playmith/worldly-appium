@@ -26,9 +26,41 @@ export async function isShown(selector: string, timeout = 0): Promise<boolean> {
   }
 }
 
+/** Screen band free of system bars. The app draws edge-to-edge, so content can sit under them. */
+let safeArea: { top: number; bottom: number; width: number } | null = null;
+async function getSafeArea() {
+  if (!safeArea) {
+    const { width, height } = await driver.getWindowSize();
+    const bars = (await driver.execute('mobile: getSystemBars').catch(() => ({}))) as Record<string, { visible?: boolean; y?: number; height?: number }>;
+    const status = bars.statusBar;
+    const nav = bars.navigationBar;
+    safeArea = {
+      top: status?.visible ? (status.y ?? 0) + (status.height ?? 0) : 0,
+      bottom: nav?.visible && nav.y ? Math.min(nav.y, height) : height,
+      width,
+    };
+  }
+  return safeArea;
+}
+
+type El = Awaited<ReturnType<typeof waitFor>>;
+
+/**
+ * Taps the part of an element that isn't covered by the status or navigation bar. A centre tap on
+ * a button half hidden under the navigation bar would press Home or Back instead.
+ */
+export async function safeClick(el: El) {
+  const r = await driver.getElementRect(await el.elementId);
+  const area = await getSafeArea();
+  const top = Math.max(r.y, area.top);
+  const bottom = Math.min(r.y + r.height, area.bottom);
+  if (bottom - top >= r.height - 2) return el.click();
+  if (bottom - top < 6) throw new Error('Element is hidden behind the system bars');
+  await driver.tap({ x: Math.round(r.x + r.width / 2), y: Math.round((top + bottom) / 2) });
+}
+
 export async function tap(selector: string, timeout = TIMEOUT.medium) {
-  const el = await waitFor(selector, timeout);
-  await el.click();
+  await safeClick(await waitFor(selector, timeout));
 }
 
 /**
@@ -55,7 +87,7 @@ export async function scrollTapUntil(innerUiSelector: string, outcomes: string[]
   const button = `android=new UiSelector()${innerUiSelector}`;
   for (let attempt = 0; attempt < 3; attempt++) {
     if (attempt > 0 && !(await isShown(button))) break;
-    await (await scrollIntoView(innerUiSelector)).click();
+    await scrollAndTap(innerUiSelector);
     const end = Date.now() + timeout;
     while (Date.now() < end) {
       for (const o of outcomes) if (await isShown(o)) return;
@@ -86,7 +118,24 @@ export async function hideKeyboard() {
 export async function scrollIntoView(innerUiSelector: string) {
   await $(scrollTo(innerUiSelector)).waitForExist({ timeout: TIMEOUT.medium });
   await driver.pause(700);
+  const el = await waitFor(`android=new UiSelector()${innerUiSelector}`);
+  // UiScrollable stops as soon as the element peeks out, often still half under the navigation bar
+  const r = await driver.getElementRect(await el.elementId);
+  const area = await getSafeArea();
+  const overlap = r.y + r.height - area.bottom;
+  if (overlap > 0) {
+    const height = Math.round((area.bottom - area.top) * 0.6);
+    await driver
+      .execute('mobile: scrollGesture', { left: 0, top: area.top + 40, width: area.width, height, direction: 'down', percent: Math.min(1, (overlap + 80) / height) })
+      .catch(() => undefined);
+    await driver.pause(500);
+  }
   return waitFor(`android=new UiSelector()${innerUiSelector}`);
+}
+
+/** Scrolls to an element (inner UiSelector) and taps its visible part. */
+export async function scrollAndTap(innerUiSelector: string) {
+  await safeClick(await scrollIntoView(innerUiSelector));
 }
 
 export async function textOf(selector: string) {
