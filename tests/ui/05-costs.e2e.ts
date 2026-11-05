@@ -75,7 +75,7 @@ describe('Travel costs', () => {
     await waitFor(CostGroupPage.expense('Dinner'));
     await CostGroupPage.openTab('balances');
     await waitFor(CostGroupPage.transfer('Ben', 'Ana'));
-    await waitFor(byTextContains(amountText(60)));
+    await waitFor(CostGroupPage.amount(60));
   });
 
   it('[UI-CST-006] an "Amounts" split that does not add up to the total is rejected', async () => {
@@ -102,7 +102,7 @@ describe('Travel costs', () => {
   it('[UI-CST-008] the Summary tab shows the total spent', async () => {
     await CostGroupPage.openTab('summary');
     await waitFor(CostGroupPage.totalSpent());
-    await waitFor(byTextContains(amountText(120)));
+    await waitFor(CostGroupPage.amount(120));
   });
 
   it('[UI-CST-009] the group card in the list shows people and expenses', async () => {
@@ -120,7 +120,11 @@ describe('Travel costs', () => {
     for (let i = 2; i <= FREE_EXPENSE_LIMIT; i++) await addExpense({ title: `Snack ${i}`, amount: 10 });
     await waitFor(CostGroupPage.freeExpenses(FREE_EXPENSE_LIMIT));
     await CostGroupPage.openNewExpense();
-    await expectAlert(t('costs.expenseLimitTitle'));
+    const alert = await Alert.waitFor();
+    expect(alert.title).toBe(t('costs.expenseLimitTitle'));
+    expect(alert.message).toBe(t('costs.expenseLimitBody', { limit: FREE_EXPENSE_LIMIT }));
+    // The alert offers Cancel / Get Premium
+    await Alert.press(t('common.cancel'));
     expect(await isShown(ExpensePage.title())).toBe(false);
     await goBack();
     await CostsListPage.waitForShown();

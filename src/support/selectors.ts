@@ -6,8 +6,13 @@
 
 /** Escapes a value for a double-quoted string inside a UiSelector expression. */
 const str = (s: string) => `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-/** Escapes regex metacharacters so a label is matched literally inside descriptionMatches. */
-const lit = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Makes text match literally inside a UiSelector regex. Appium's selector parser keeps backslashes
+ * as-is, so metacharacters are wrapped in a character class ("(" → "[(]") instead of escaped;
+ * the few that can't be (^ [ ] \) match any character.
+ */
+export const regexLiteral = (s: string) => s.replace(/[.*+?${}()|[\]\\^]/g, (c) => ('^[]\\'.includes(c) ? '.' : `[${c}]`));
+const lit = regexLiteral;
 
 const ui = (expr: string) => `android=new UiSelector()${expr}`;
 
@@ -27,7 +32,8 @@ export const byTextNth = (text: string, n: number) => ui(`.text(${str(text)}).in
  * label and the input as siblings, and inputs lose their placeholder once they have a value.
  */
 export const inputAfterLabel = (label: string) =>
-  `//*[starts-with(@text, ${xpathString(label)})]/following-sibling::android.widget.EditText[1]`;
+  // Labels are TextViews; an input whose placeholder equals the label ("Email") must not match itself
+  `//android.widget.TextView[starts-with(@text, ${xpathString(label)})]/following-sibling::android.widget.EditText[1]`;
 const xpathString = (s: string) => (s.includes('"') ? `concat("${s.split('"').join(`", '"', "`)}")` : `"${s}"`);
 /** A pressable whose merged label ends with ", <label>" (tabs, list rows with an icon or flag in front). */
 export const byLabelEnding = (label: string) => ui(`.descriptionMatches(${str(`(?s).*, ${lit(label)}$`)})`);
@@ -44,7 +50,11 @@ export const scrollToText = (text: string) => scrollTo(`.text(${str(text)})`);
 export const scrollToLabel = (label: string) => scrollTo(`.description(${str(label)})`);
 export const scrollToTextContains = (text: string) => scrollTo(`.textContains(${str(text)})`);
 
-/** Android system dialog (React Native Alert.alert). */
+/**
+ * Android dialog shown by React Native's Alert.alert(). React Native renders the title in its own
+ * `<package>:id/alert_title` view; plain Android dialogs use `android:id/alertTitle`.
+ */
+export const alertTitle = () => `android=new UiSelector().resourceIdMatches(".*:id/(alert_title|alertTitle)")`;
 export const alertIds = {
   title: 'android:id/alertTitle',
   message: 'android:id/message',

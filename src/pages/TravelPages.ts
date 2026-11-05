@@ -1,6 +1,6 @@
 import { driver } from '@wdio/globals';
 
-import { alertIds, byClass, byId, byLabel, byLabelEnding, byLabelStartsWith, byText, byTextStartsWith, inputAfterLabel } from '../support/selectors.js';
+import { alertIds, editText, byClass, byId, byLabel, byLabelEnding, byLabelStartsWith, byText, byTextStartsWith, inputAfterLabel } from '../support/selectors.js';
 import { t } from '../support/strings.js';
 import { anyAlert, hideKeyboard, isShown, scrollIntoView, scrollTapUntil, tap, tapUntil, typeInto, waitFor } from './base.js';
 
@@ -41,13 +41,13 @@ export const FlightsPage = {
 };
 
 export const AirportPicker = {
-  search: () => byClass('android.widget.EditText'),
+  search: () => editText(t('trips.searchAirport')),
   result: (iata: string) => byTextStartsWith(`${iata} · `),
   close: () => byLabel(t('common.close')),
 
   /** Opens the picker from its field, searches the IATA code and picks the airport. */
   async choose(fieldLabel: string, iata: string) {
-    await tap(byLabel(fieldLabel));
+    await (await scrollIntoView(`.description(${JSON.stringify(fieldLabel)})`)).click();
     await typeInto(this.search(), iata);
     await waitFor(this.result(iata));
     // The first tap after typing can be used to blur the search box, so tap until the picker closes
@@ -92,9 +92,9 @@ export const TripEditPage = {
     await tap(this.date());
     await tap(byId(alertIds.positive));
   },
+  /** Types the seat; the empty seat field shows the "12A" placeholder. */
   async setSeat(value: string) {
-    await scrollIntoView(`.text(${JSON.stringify(t('trips.seat'))})`);
-    await typeInto(this.seat(), value);
+    await (await scrollIntoView('.className("android.widget.EditText").text("12A")')).setValue(value);
     await hideKeyboard();
   },
   /** Saves; ends on a validation alert or back on the flights list. */

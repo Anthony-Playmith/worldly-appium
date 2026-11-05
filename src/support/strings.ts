@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { env } from '../../config/env.js';
+import { regexLiteral } from './selectors.js';
 
 type Dict = { [key: string]: string | Dict };
 
@@ -52,7 +53,7 @@ export function t(key: string, params: Record<string, string | number> = {}): st
 export function tPattern(key: string, params: Record<string, string | number> = {}): string {
   const raw = lookup(dict(current), key) ?? lookup(dict('en'), key);
   if (raw === undefined) throw new Error(`Unknown translation key: ${key}`);
-  const lit = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const lit = regexLiteral;
   return `^${raw
     .split(/(\{\{\s*\w+\s*\}\})/)
     .map((part) => {

@@ -2,7 +2,7 @@ import { $, $$ } from '@wdio/globals';
 
 import { byClass, byLabel, byLabelEnding, byLabelItem, byText } from '../support/selectors.js';
 import { countryName, t } from '../support/strings.js';
-import { hideKeyboard, isShown, tap, typeInto, waitFor } from './base.js';
+import { hideKeyboard, isShown, scrollIntoView, tap, waitFor } from './base.js';
 
 export const FREE_DAILY_QUESTIONS = 5;
 export const QUESTION_SECONDS = 15;
@@ -17,7 +17,7 @@ export const QuizPage = {
   comingSoon: () => byText(t('quiz.comingSoon')),
   /** Stat value shown above its label (Answered, Accuracy, Streak, Best). */
   stat: (label: 'answered' | 'accuracy' | 'streak' | 'bestStreak') =>
-    `//android.widget.TextView[@text=${JSON.stringify(t(`quiz.${label}`))}]/preceding-sibling::android.widget.TextView[1]`,
+    `//android.widget.TextView[@text=${JSON.stringify(t(`quiz.${label}`))}]/preceding::android.widget.TextView[1]`,
 
   async waitForShown() {
     await waitFor(this.answered());
@@ -29,16 +29,23 @@ export const QuizPage = {
   async statValue(label: 'answered' | 'accuracy' | 'streak' | 'bestStreak') {
     return (await waitFor(this.stat(label))).getText();
   },
+  /** Starts a quiz; the list may be scrolled, so the search box / Worldwide row are scrolled into view first. */
   async start(cc: string | 'WORLD') {
-    if (cc === 'WORLD') return tap(this.worldwide());
-    await typeInto(this.search(), countryName(cc));
+    if (cc === 'WORLD') {
+      await (await scrollIntoView(`.descriptionMatches(${JSON.stringify(`(?s).*, ${t('quiz.worldwide')}(,.*)?$`)})`)).click();
+      return;
+    }
+    const search = await scrollIntoView('.className("android.widget.EditText")');
+    await search.click();
+    await search.setValue(countryName(cc));
     await hideKeyboard();
     await tap(this.country(cc));
   },
 };
 
 export const QuizPlayPage = {
-  question: () => '(//android.widget.Button)[1]/preceding-sibling::android.widget.TextView[1]',
+  /** React Native flattens the layout, so the question is simply the last text before the first answer button. */
+  question: () => '(//android.widget.Button)[1]/preceding::android.widget.TextView[1]',
   option: (text: string) => byLabel(text),
   options: () => '//android.widget.Button',
   /** After answering, the correct option gets a check icon, which adds a trailing ", " to its label. */

@@ -1,6 +1,6 @@
 import { $, $$, driver } from '@wdio/globals';
 
-import { alertIds, byId, scrollTo } from '../support/selectors.js';
+import { alertIds, alertTitle, byId, regexLiteral, scrollTo } from '../support/selectors.js';
 
 export const TIMEOUT = { short: 5_000, medium: 20_000, long: 60_000, launch: 150_000 };
 
@@ -44,7 +44,7 @@ export async function tapUntil(selector: string, expected: string, attempts = 3,
 }
 
 /** Selectors for any React Native Alert dialog, for use as an expected outcome. */
-export const anyAlert = () => [byId(alertIds.title), byId(alertIds.message)];
+export const anyAlert = () => [byId(alertIds.positive)];
 
 /**
  * Scrolls to a button (inner UiSelector), taps it and waits until one of `outcomes` shows up.
@@ -103,33 +103,40 @@ export async function isChecked(selector: string) {
 
 export const count = async (selector: string) => (await $$(selector)).length;
 
-/** The React Native header back button. */
+/**
+ * Goes back one screen: taps the header's back arrow when there is one (a system Back press can
+ * be spent closing the keyboard), otherwise presses Back.
+ */
 export async function goBack() {
-  await driver.back();
+  const up = '~Navigate up';
+  if (await isShown(up)) await $(up).click();
+  else await driver.back();
+  await driver.pause(400);
 }
 
-/** Android dialog shown by React Native's Alert.alert(). */
+/** Android dialog shown by React Native's Alert.alert(). Every such dialog has at least one button. */
 export const Alert = {
   async waitFor(timeout = TIMEOUT.medium) {
-    await waitFor(byId(alertIds.title), timeout).catch(() => waitFor(byId(alertIds.message), 1000));
+    await waitFor(byId(alertIds.positive), timeout);
     return { title: await this.title(), message: await this.message() };
   },
   async title() {
-    return (await isShown(byId(alertIds.title))) ? $(byId(alertIds.title)).getText() : '';
+    return (await isShown(alertTitle())) ? $(alertTitle()).getText() : '';
   },
   async message() {
     return (await isShown(byId(alertIds.message))) ? $(byId(alertIds.message)).getText() : '';
   },
   /** Taps a dialog button by its label (Android may render it in capitals). */
   async press(label: string) {
-    const text = `(?i)${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`;
+    const text = `(?i)${regexLiteral(label)}`;
     await tap(`android=new UiSelector().resourceIdMatches("android:id/button[123]").textMatches(${JSON.stringify(text)})`);
-    await waitGone(byId(alertIds.title), TIMEOUT.short).catch(() => undefined);
+    await waitGone(byId(alertIds.positive), TIMEOUT.short).catch(() => undefined);
   },
   async dismiss() {
     await tap(byId(alertIds.positive));
+    await waitGone(byId(alertIds.positive), TIMEOUT.short).catch(() => undefined);
   },
   async isOpen() {
-    return (await isShown(byId(alertIds.title))) || (await isShown(byId(alertIds.message)));
+    return isShown(byId(alertIds.positive));
   },
 };

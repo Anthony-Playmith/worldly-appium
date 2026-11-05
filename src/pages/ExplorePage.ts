@@ -1,13 +1,13 @@
 import { $ } from '@wdio/globals';
 
-import { byClass, byLabel, byLabelEnding, byLabelStartsWith, byText, byTextMatches } from '../support/selectors.js';
+import { regexLiteral, byClass, byLabel, byLabelEnding, byLabelStartsWith, byText, byTextMatches } from '../support/selectors.js';
 import { countryName, t } from '../support/strings.js';
 import { hideKeyboard, isShown, tap, typeInto, waitFor } from './base.js';
 
 export type ExploreTab = 'countries' | 'territories' | 'unesco' | 'regions' | 'cities' | 'airports';
 export type Status = 'visited' | 'want';
 
-const lit = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const lit = regexLiteral;
 
 /** Explore (Add places): lists of countries, territories, UNESCO sites, regions, cities, airports. */
 export const ExplorePage = {

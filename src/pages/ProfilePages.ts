@@ -25,7 +25,8 @@ export const ProfilePage = {
   legacySettings: () => byLabel(t('settings.title')),
 
   async waitForShown() {
-    await waitFor(this.achievements());
+    // The tab keeps its scroll position, so scroll back up to the travels section
+    await scrollIntoView(`.descriptionMatches(${q(`(?s).*, ${t('stats.achievements')}(,.*)?$`)})`);
   },
   /** Older builds keep preferences behind a Settings gear; newer ones show them inline. */
   async openPreferences() {
@@ -33,14 +34,13 @@ export const ProfilePage = {
   },
   async setName(name: string) {
     await this.openPreferences();
-    await typeInto(this.nameInput(), name);
+    const input = await scrollIntoView(`.description(${q(t('settings.name'))})`);
+    await input.click();
+    await input.setValue(name);
     await hideKeyboard();
   },
   async nameValue() {
-    return (await waitFor(this.nameInput())).getText();
-  },
-  async scrollTo(inner: string) {
-    return scrollIntoView(inner);
+    return (await scrollIntoView(`.description(${q(t('settings.name'))})`)).getText();
   },
   async openLanguage() {
     await (await scrollIntoView(`.text(${q(t('settings.language'))})`)).click();

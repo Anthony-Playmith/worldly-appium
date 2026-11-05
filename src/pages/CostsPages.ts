@@ -1,8 +1,8 @@
-import { $$, driver } from '@wdio/globals';
+import { $, $$, driver } from '@wdio/globals';
 
 import { byClass, byLabel, byLabelEnding, byLabelItem, byText, byTextContains, editText, inputAfterLabel } from '../support/selectors.js';
 import { language, t } from '../support/strings.js';
-import { anyAlert, hideKeyboard, scrollIntoView, scrollTapUntil, tap, tapUntil, typeInto, waitFor } from './base.js';
+import { anyAlert, hideKeyboard, isShown, scrollIntoView, scrollTapUntil, tap, tapUntil, typeInto, waitFor, waitGone } from './base.js';
 
 export const FREE_COST_GROUP_LIMIT = 3;
 export const FREE_EXPENSE_LIMIT = 7;
@@ -28,10 +28,18 @@ export const CostsListPage = {
 };
 
 export const CurrencyPicker = {
+  /** The picker opens over the form (whose fields stay visible to Appium), so it is driven by its own search box. */
   async choose(fieldLabel: string, code: string) {
-    await tap(byLabel(fieldLabel));
-    await typeInto(byClass('android.widget.EditText'), code);
-    await tapUntil(byText(code), byLabel(fieldLabel));
+    await (await scrollIntoView(`.description(${JSON.stringify(fieldLabel)})`)).click();
+    await typeInto(editText(t('costs.searchCurrency')), code);
+    // Rows are labelled "<code>" or "<code>, <name>"; the picker's Close button shows it is still open
+    const row = `android=new UiSelector().descriptionMatches(${JSON.stringify(`^${code}(,.*)?$`)})`;
+    const close = byLabel(t('common.close'));
+    for (let i = 0; i < 3 && (await isShown(close)); i++) {
+      if (await isShown(row, 5_000)) await $(row).click();
+      await driver.pause(800);
+    }
+    await waitGone(close);
   },
 };
 
@@ -58,12 +66,12 @@ export const CostGroupEditPage = {
   },
   async addMembers(...names: string[]) {
     for (const n of names) {
-      await typeInto(this.memberInput(), n);
+      await (await scrollIntoView(`.className("android.widget.EditText").text(${JSON.stringify(t('costs.memberPlaceholder'))})`)).setValue(n);
       await tapUntil(this.addMember(), this.member(n));
     }
   },
   async setBudget(amount: number) {
-    await typeInto(this.budget(), String(amount));
+    await (await scrollIntoView('.className("android.widget.EditText").text("0")')).setValue(String(amount));
     await hideKeyboard();
   },
   /** Saves; ends on a validation alert or on the group page. */
@@ -90,7 +98,8 @@ export const CostGroupPage = {
   transfer: (from: string, to: string) => byText(`${from} → ${to}`),
   markPaid: () => byLabel(t('costs.markPaid')),
   allSettled: () => byText(t('costs.allSettled')),
-  owes: (amount: number) => byTextContains(amountText(amount)),
+  /** First text on screen containing this amount (it usually appears in several places). */
+  amount: (n: number) => `android=new UiSelector().textContains(${JSON.stringify(amountText(n))}).instance(0)`,
   totalSpent: () => byText(t('costs.totalSpent')),
 
   async waitForShown(name: string) {

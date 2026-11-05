@@ -68,7 +68,7 @@ describe('Travel hub and flights', () => {
     await FlightsPage.waitForShown();
     await waitFor(FlightsPage.card('BA112 · British Airways'));
     // Great-circle JFK-LHR is about 5,540 km
-    await waitFor(byTextMatches('^5[.,\\s]?5\\d\\d km · \\d+h \\d+m$'));
+    await waitFor(byTextMatches('^5[., ]?5[0-9][0-9] km · [0-9]+h [0-9]+m$'));
     await expect($(FlightsPage.freeCounter(1))).toBeDisplayed();
   });
 
