@@ -2,7 +2,7 @@ import { $, $$, driver } from '@wdio/globals';
 
 import { alertIds, byClass, byId, byLabel, byLabelEnding, byLabelItem, byText } from '../support/selectors.js';
 import { countryName, t } from '../support/strings.js';
-import { hideKeyboard, isShown, scrollIntoView, tap, waitFor, scrollAndTap } from './base.js';
+import { getSafeArea, hideKeyboard, isShown, scrollIntoView, tap, waitFor, scrollAndTap } from './base.js';
 
 export const FREE_DAILY_QUESTIONS = 5;
 export const QUESTION_SECONDS = 15;
@@ -126,17 +126,17 @@ export const QuizPlayPage = {
   async openReport() {
     await scrollAndTap(`.descriptionContains(${JSON.stringify(t('quiz.report'))})`);
   },
-  /**
-   * Taps "Send report" near its top edge. KNOWN APP ISSUE: the report sheet ignores the bottom
-   * safe area, so on phones with on-screen navigation buttons the lower half of this button sits
-   * under the navigation bar and a tap in its centre hits the system bar instead.
-   */
+  /** How far "Send report" reaches below the navigation bar's top edge, in px (0 when fully visible; F-002). */
+  async reportSendOverlap() {
+    const el = await waitFor(this.reportSend());
+    const r = await driver.getElementRect(await el.elementId);
+    return Math.max(0, r.y + r.height - (await getSafeArea()).bottom);
+  },
+  /** Taps "Send report" in its centre, as a person would. */
   async sendReport() {
     // The first tap can be spent blurring the note field, so tap until the confirmation appears
     for (let attempt = 0; attempt < 3 && !(await isShown(byId(alertIds.positive))); attempt++) {
-      const el = await waitFor(this.reportSend());
-      const { height } = await el.getSize();
-      await el.click({ y: -Math.round(height / 2) + 8 });
+      await (await waitFor(this.reportSend())).click();
       await isShown(byId(alertIds.positive), 6_000);
     }
   },

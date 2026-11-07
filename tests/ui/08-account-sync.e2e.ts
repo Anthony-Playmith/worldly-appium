@@ -9,7 +9,7 @@ import { MapPage } from '../../src/pages/MapPage.js';
 import { AuthPage, ProfilePage } from '../../src/pages/ProfilePages.js';
 import { TabBar } from '../../src/pages/TabBar.js';
 import { addFlight, FlightsPage, TravelPage } from '../../src/pages/TravelPages.js';
-import { Alert, tap, waitFor, waitGone } from '../../src/pages/base.js';
+import { Alert, scrollIntoView, tap, waitFor, waitGone } from '../../src/pages/base.js';
 import { markCountries } from '../../src/pages/flows.js';
 import { t } from '../../src/support/strings.js';
 import { adminClient, cleanupStaleTestUsers, createTestUser, deleteTestUser, eventually, type TestUser, userExists } from '../../src/support/supabase.js';
@@ -96,7 +96,8 @@ describe('Account and cloud sync (app ↔ Supabase)', () => {
   it('[UI-ACC-007] signing out keeps the map on the phone and shows the signed-out profile', async () => {
     await TabBar.open('profile');
     await tap(ProfilePage.signOut());
-    await waitFor(ProfilePage.notSignedIn());
+    // The profile is still scrolled down to the Danger Zone, so bring the account row back into view
+    await scrollIntoView(`.text(${JSON.stringify(t('profile.notSignedIn'))})`);
     await TabBar.open('map');
     await MapPage.expectCountries(4);
   });
@@ -114,7 +115,8 @@ describe('Account and cloud sync (app ↔ Supabase)', () => {
     expect([result.title, result.message].join(' | ')).toContain(t('settings.deleteAccountDone'));
     await Alert.dismiss();
     expect(await userExists(user.id)).toBe(false);
-    await waitFor(ProfilePage.notSignedIn());
+    // The profile is still scrolled down to the Danger Zone, so bring the account row back into view
+    await scrollIntoView(`.text(${JSON.stringify(t('profile.notSignedIn'))})`);
     // Deleting the account also wipes the data on the phone
     await TabBar.open('map');
     await MapPage.expectCountries(0);

@@ -28,7 +28,7 @@ export async function isShown(selector: string, timeout = 0): Promise<boolean> {
 
 /** Screen band free of system bars. The app draws edge-to-edge, so content can sit under them. */
 let safeArea: { top: number; bottom: number; width: number } | null = null;
-async function getSafeArea() {
+export async function getSafeArea() {
   if (!safeArea) {
     const { width, height } = await driver.getWindowSize();
     const bars = (await driver.execute('mobile: getSystemBars').catch(() => ({}))) as Record<string, { visible?: boolean; y?: number; height?: number }>;

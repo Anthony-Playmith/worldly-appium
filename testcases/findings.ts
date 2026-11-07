@@ -12,18 +12,18 @@ export type Finding = {
 
 export const findings: Finding[] = [
   {
-    id: 'F-001', date: '2026-11-05', severity: 'High', status: 'Open',
+    id: 'F-001', date: '2026-11-05', severity: 'High', status: 'Fixed',
     title: '"Delete account" fails: the delete-account Edge Function is not deployed',
     details: 'POST/OPTIONS /functions/v1/delete-account answer 404 "Requested function was not found". In the app, Profile > Delete account shows "Something went wrong · Edge Function returned a non-2xx status code" and the account stays. Google Play requires in-app account deletion.',
     tests: 'API-DEL-001…005, UI-ACC-008',
-    suggestion: 'Deploy it: npx supabase functions deploy delete-account --project-ref xajoygepdmcucslneawt (config.toml already sets verify_jwt = false). Then re-run npm run test:backend.',
+    suggestion: 'Deploy it: npx supabase functions deploy delete-account --project-ref xajoygepdmcucslneawt (config.toml already sets verify_jwt = false). Then re-run npm run test:backend. FIXED 2026-11-06: deployed; API-DEL-001…005 and UI-ACC-008 pass.',
   },
   {
-    id: 'F-002', date: '2026-11-05', severity: 'Medium', status: 'Open',
+    id: 'F-002', date: '2026-11-05', severity: 'Medium', status: 'Fixed',
     title: 'Quiz "Report this question" sheet: the Send button sits partly under the Android navigation bar',
     details: 'The bottom sheet (React Native Modal) ignores the bottom safe-area inset; on phones with 3-button navigation the lower half of "Send report" is covered and a tap there hits the system bar.',
-    tests: 'UI-QZ-005 (taps the top edge as a workaround)',
-    suggestion: 'Add the bottom inset (useSafeAreaInsets().bottom) to the sheet padding, here and in the map Layers sheet.',
+    tests: 'UI-QZ-005 (checks the button sits fully above the navigation bar, then taps its centre)',
+    suggestion: 'Add the bottom inset (useSafeAreaInsets().bottom) to the sheet padding, here and in the map Layers sheet. FIXED 2026-11-06: inset added; verified on EAS preview build 9cd4e370 (UI-QZ-005 fails on the previous build: 48 px overlap).',
   },
   {
     id: 'F-003', date: '2026-11-05', severity: 'Low', status: 'To confirm',

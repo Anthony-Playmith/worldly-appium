@@ -77,6 +77,8 @@ describe('Geography quiz', () => {
     const note = `${QA_MARKER} UI test ${Date.now()}`;
     await typeInto(QuizPlayPage.reportNote(), note);
     await driver.hideKeyboard().catch(() => undefined);
+    // F-002: the button must sit fully above the navigation bar
+    expect(await QuizPlayPage.reportSendOverlap()).toBe(0);
     await QuizPlayPage.sendReport();
     const alert = await Alert.waitFor();
     expect([alert.title, alert.message]).toContain(t('quiz.reportThanks'));
